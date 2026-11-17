@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1720">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Friksjon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Friksjonsmåler vintervei</title>
+<style>
+  :root{--bg:#0f1720;--card:#17212c;--line:#263443;--txt:#e8eef4;--mut:#93a4b5;--acc:#4aa3ff;
+        --green:#1f9d55;--yellow:#e0b400;--red:#d63a3a;--blue:#2563eb}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:#0b1118;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  header h1{font-size:17px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{font-size:11px;padding:3px 7px;border-radius:10px;background:#263443;color:var(--mut);white-space:nowrap}
+  .chip.ok{background:#16422b;color:#8ff0b5}.chip.bad{background:#4a1d1d;color:#ffb3b3}.chip.warn{background:#4a3d0f;color:#ffe08a}
+  main{padding:12px;max-width:720px;margin:0 auto}
+  .view{display:none}.view.active{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 10px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  #status{border-radius:18px;padding:22px 16px;text-align:center;min-height:42vh;display:flex;flex-direction:column;justify-content:center;transition:background .3s;margin-bottom:12px;background:#1d2a38;cursor:pointer;user-select:none}
+  #status .t{font-size:24px;font-weight:700}
+  #status .big{font-size:84px;font-weight:800;line-height:1.05;margin:8px 0;font-variant-numeric:tabular-nums}
+  #status .big small{font-size:28px;font-weight:600}
+  #status .s{font-size:17px;opacity:.92}
+  #status.st-ready{background:var(--green)}
+  #status.st-measuring,#status.st-processing{background:var(--blue)}
+  #status.st-green{background:var(--green)}#status.st-yellow{background:var(--yellow);color:#1b1500}#status.st-red{background:var(--red)}
+  #status.st-invalid{background:#5b6573}
+  button{font:inherit;border:0;border-radius:12px;padding:13px 14px;background:var(--acc);color:#fff;font-weight:650;font-size:16px;cursor:pointer}
+  button.sec{background:#2a3a4b}button.dang{background:#7a2626}
+  button:disabled{opacity:.45}
+  .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 140px}
+  label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+  select,input[type=number],input[type=url],input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0e161f;color:var(--txt)}
+  .chk{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:15px;color:var(--txt)}
+  .chk input{width:22px;height:22px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .kv{background:#0e161f;border-radius:10px;padding:8px}
+  .kv .k{font-size:11px;color:var(--mut)}.kv .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+  table.res{width:100%;border-collapse:collapse;font-size:15px}
+  table.res td{padding:6px 2px;border-bottom:1px solid var(--line)}table.res td:last-child{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}
+  .msg{font-size:14px;padding:8px 10px;border-radius:8px;margin:6px 0}
+  .msg.err{background:#4a1d1d;color:#ffd0d0}.msg.warn{background:#4a3d0f;color:#ffe9a8}.msg.ok{background:#16422b;color:#b8f5cf}
+  .mut{color:var(--mut);font-size:13px}
+  canvas{width:100%;height:170px;background:#0e161f;border-radius:10px;margin-top:10px}
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0b1118;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+  nav button{flex:1;background:none;border-radius:0;color:var(--mut);font-size:13px;padding:10px 0 12px;font-weight:600}
+  nav button.active{color:var(--acc)}
+  nav button span{display:block;font-size:20px;margin-bottom:2px}
+  .logitem{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .dot{min-width:58px;text-align:center;border-radius:10px;padding:8px 4px;font-weight:800;font-size:18px}
+  .dot.green{background:var(--green)}.dot.yellow{background:var(--yellow);color:#1b1500}.dot.red{background:var(--red)}.dot.invalid{background:#5b6573}
+  .logitem .info{flex:1;font-size:13px;color:var(--mut)}.logitem .info b{color:var(--txt);font-size:14px}
+  .help p,.help li{font-size:15px;line-height:1.5}.help h3{margin:16px 0 6px;font-size:16px}
+  a{color:var(--acc)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>❄️ Friksjonsmåler</h1>
+  <span id="chipSensor" class="chip">Sensor</span>
+  <span id="chipGps" class="chip">GPS</span>
+  <span id="chipCal" class="chip">Kal.</span>
+</header>
+
+<main>
+<!-- ===================== MÅLING ===================== -->
+<section id="v-measure" class="view active">
+  <div id="status" class="st-setup" role="status" aria-live="polite">
+    <div class="t" id="stTitle">Velkommen</div>
+    <div class="big" id="stBig">μ</div>
+    <div class="s" id="stSub">Trykk «Start sensorer» for å begynne</div>
+  </div>
+
+  <div class="card" id="setupCard">
+    <h2>Steg 1 · Oppsett og kalibrering</h2>
+    <label for="tire">Dekktype</label>
+    <select id="tire">
+      <option>Piggdekk</option>
+      <option>Piggfrie vinterdekk</option>
+      <option>Helårsdekk</option>
+      <option>Sommerdekk</option>
+    </select>
+    <div class="row" style="margin-top:12px">
+      <button id="btnStart">▶ Start sensorer</button>
+      <button id="btnCal" disabled>🎯 Kalibrer</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="btnCal2" class="sec" disabled>↻ Snu bilen 180° og kalibrer igjen (anbefalt)</button>
+    </div>
+    <p class="mut" id="calInfo">Fest telefonen i en stiv holder. Kalibrer mens bilen står stille på flatt underlag.</p>
+  </div>
+
+  <div class="card">
+    <h2>Sanntid</h2>
+    <div class="grid">
+      <div class="kv"><div class="k">Fart (GPS)</div><div class="v" id="lvSpeed">–</div></div>
+      <div class="kv"><div class="k">Retardasjon</div><div class="v" id="lvDec">–</div></div>
+      <div class="kv"><div class="k">GPS-nøyaktighet</div><div class="v" id="lvAcc">–</div></div>
+      <div class="kv"><div class="k">Samplerate</div><div class="v" id="lvRate">–</div></div>
+      <div class="kv"><div class="k">Kurs</div><div class="v" id="lvHead">–</div></div>
+      <div class="kv"><div class="k">Gyroskop</div><div class="v" id="lvGyro">–</div></div>
+    </div>
+  </div>
+
+  <div class="card hide" id="resultCard">
+    <h2>Siste måling</h2>
+    <div id="resMsgs"></div>
+    <table class="res" id="resTable"></table>
+    <canvas id="plot" width="700" height="340"></canvas>
+    <p class="mut">Kurven viser retardasjon (g) gjennom bremsingen. Skravert felt = stabil fase brukt i beregningen. Stiplede linjer = 0,20 og 0,25.</p>
+    <div class="row"><button id="btnNew" class="sec">Ny test</button></div>
+  </div>
+</section>
+
+<!-- ===================== LOGG ===================== -->
+<section id="v-log" class="view">
+  <div class="card">
+    <h2>Målelogg</h2>
+    <div class="row">
+      <button id="btnCsv" class="sec">⬇ CSV</button>
+      <button id="btnGeo" class="sec">⬇ GeoJSON</button>
+      <button id="btnSync" class="sec">☁ Synk nå</button>
+    </div>
+    <p class="mut" id="logSummary"></p>
+    <div id="logList"></div>
+    <div class="row" style="margin-top:12px"><button id="btnClear" class="dang">Slett hele loggen</button></div>
+  </div>
+</section>
+
+<!-- ===================== INNSTILLINGER ===================== -->
+<section id="v-settings" class="view">
+  <div class="card">
+    <h2>Måling</h2>
+    <label for="setReady">Fart for «Klar til bremsetest» (km/t)</label>
+    <input id="setReady" type="number" min="20" max="120" step="1">
+    <label for="setMin">Minste gyldige utgangsfart (km/t)</label>
+    <input id="setMin" type="number" min="15" max="120" step="1">
+    <label for="setSlope">Manuell stigning i % (+ oppover, − nedover). Tom = automatisk</label>
+    <input id="setSlope" type="number" step="0.5" placeholder="automatisk">
+    <label class="chk"><input id="setPitch" type="checkbox"> Pitch-korreksjon med gyroskop</label>
+    <label class="chk"><input id="setVoice" type="checkbox"> Taletilbakemelding (anbefalt – du slipper å se på skjermen)</label>
+    <label class="chk"><input id="setWeather" type="checkbox"> Hent værdata fra MET (lufttemperatur, nedbør)</label>
+  </div>
+  <div class="card">
+    <h2>Skysynkronisering (valgfritt)</h2>
+    <label for="setHook">Webhook-URL – hver måling sendes som JSON (HTTP POST)</label>
+    <input id="setHook" type="url" placeholder="https://…">
+    <p class="mut">Kan f.eks. være en Power Automate-flyt, Google Apps Script eller egen server. Tom = kun lokal lagring.</p>
+  </div>
+  <div class="card">
+    <h2>Demo / test uten bil</h2>
+    <div class="row">
+      <div><label for="simMu">Simulert μ</label><input id="simMu" type="number" step="0.01" value="0.22"></div>
+      <div><label for="simSlope">Stigning %</label><input id="simSlope" type="number" step="1" value="0"></div>
+      <div><label for="simV">Fart km/t</label><input id="simV" type="number" step="5" value="60"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="btnSim" class="sec">Kjør simulert bremsetest</button></div>
+    <p class="mut">Lager syntetiske sensordata (med støy, ABS-vibrasjon og nikk) og kjører dem gjennom samme beregning. Lagres i loggen merket «SIM».</p>
+  </div>
+  <div class="card">
+    <h2>Kalibrering</h2>
+    <p class="mut" id="calDetail">–</p>
+    <button id="btnResetCal" class="dang">Nullstill kalibrering</button>
+  </div>
+</section>
+
+<!-- ===================== HJELP ===================== -->
+<section id="v-help" class="view help">
+  <div class="card">
+    <h2>Slik bruker du appen</h2>
+    <ol>
+      <li><b>Monter</b> telefonen i en stiv holder på dashbord eller frontrute. Ikke svanehals, ikke løst i setet.</li>
+      <li><b>Start sensorer</b> og gi tilgang til bevegelse og posisjon.</li>
+      <li>Velg <b>dekktype</b> og trykk <b>Kalibrer</b> mens bilen står stille på flatt underlag. For best resultat: snu bilen 180° på samme sted og trykk «kalibrer igjen».</li>
+      <li>Kjør opp i minst 40 km/t på en rett strekning. Skjermen blir <b style="color:#4ade80">grønn: «Klar til bremsetest»</b> (og appen sier det høyt).</li>
+      <li>Sjekk speil og trafikk. Tråkk bremsen <b>raskt og bestemt</b> til ABS slår inn, i minst 2–3 sekunder eller til stillstand.</li>
+      <li>Resultatet vises og leses opp: μ-verdi, fargekode og om målingen er godkjent. Alt lagres i loggen.</li>
+    </ol>
+    <h3>Fargekoder</h3>
+    <p>🟢 <b>μ ≥ 0,25</b> – normalt vinterkrav oppfylt<br>🟡 <b>0,20–0,25</b> – glatt, vurder strøing/salting<br>🔴 <b>μ &lt; 0,20</b> – svært glatt, kritisk lav friksjon</p>
+    <h3>⚠️ Sikkerhet</h3>
+    <p>Bremsetester skal bare gjøres når det er trygt: god sikt, rett vei og ingen trafikk tett bak. Ikke betjen telefonen mens du kjører – appen går automatisk og gir talebeskjed. Sjåføren har alltid ansvaret.</p>
+    <h3>Slik regnes det</h3>
+    <p>Appen fjerner tyngdekraften ved hjelp av kalibreringen, finner bilens lengdeakse ut fra selve bremsingen og korrigerer for at bilen dykker (gyroskopet). Signalet lavpassfiltreres ved 5 Hz, og gjennomsnittet i den stabile bremsefasen gir <b>μ = a<sub>brems</sub>/g ± tan θ</b>. Fordi akselerometeret måler friksjonskraften i veiplanet direkte, blir bakker kompensert automatisk; helningen vises og brukes også i kontrollmetoden <b>μ = (v₀² − v₁²)/(2·g·s)</b> fra GPS.</p>
+    <h3>Begrensninger</h3>
+    <p>Svak eller gradvis bremsing gir for lav μ. Resultatet gjelder dette kjøretøyet med disse dekkene. GPS i nettleser oppdateres ofte bare 1 gang i sekundet, så kontrollmetoden er grovere enn akselerometeret. Appen er et hjelpemiddel og ikke et sertifisert friksjonsmåleinstrument.</p>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button data-v="v-measure" class="active"><span>🚗</span>Måling</button>
+  <button data-v="v-log"><span>📋</span>Logg</button>
+  <button data-v="v-settings"><span>⚙️</span>Innstillinger</button>
+  <button data-v="v-help"><span>❓</span>Hjelp</button>
+</nav>
+
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
